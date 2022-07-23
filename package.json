@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": ""
+    "compras": "node ./projeto_lista_compras/index.js",
+    "compras-session": "node ./projeto_lista_compras/lista_session.js"
   },
   "keywords": [],
   "author": "pedro padilha portella",
