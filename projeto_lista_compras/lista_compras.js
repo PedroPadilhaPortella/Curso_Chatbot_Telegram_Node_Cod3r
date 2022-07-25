@@ -17,7 +17,7 @@ const botoes = () => Extra.markup(
 
 
 bot.start(async ctx => {
-    const name = ctx.update.message.from.first_name
+    const name = ctx.update.message.from.first_name;
     await ctx.reply(`Seja bem vindo, ${name}!`)
     await ctx.reply('Escreva os itens que você deseja adicionar...')
 })

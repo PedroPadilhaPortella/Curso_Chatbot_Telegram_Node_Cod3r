@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "compras": "node ./projeto_lista_compras/index.js",
-    "compras-session": "node ./projeto_lista_compras/lista_session.js"
+    "compras": "node ./projeto_lista_compras/lista_compras.js",
+    "compras-session": "node ./projeto_lista_compras/lista_session.js",
+    "compras-middlewares": "node ./projeto_lista_compras/lista_middlewares.js",
+    "compras-grupos": "node ./projeto_lista_compras/lista_grupos.js"
   },
   "keywords": [],
   "author": "pedro padilha portella",
