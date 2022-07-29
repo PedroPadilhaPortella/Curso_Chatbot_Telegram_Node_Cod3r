@@ -73,8 +73,8 @@ bot.on('text', async ctx => {
 bot.on('location', async ctx => {
     try {
         const { latitude: lat, longitude: lon } = ctx.message.location
-        const API_ID = '95827a53f8fc91d0e4002c2ba6529aa2';
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_ID}`
+        const API_ID = env['API_ID'];
+        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&APPID=${API_ID}`
         const res = await axios.get(url)
         await ctx.reply(`Hum... Você está em ${res.data.name}`)
         await ctx.reply(`A temperatura por aí está em ${res.data.main.temp}°C`, tecladoOpcoes)
