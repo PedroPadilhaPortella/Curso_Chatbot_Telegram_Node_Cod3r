@@ -4,11 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "serve": "json-server --watch db.json --port 3001",
     "compras": "node ./botListaCompras/lista_compras.js",
     "compras-session": "node ./botListaCompras/lista_session.js",
     "compras-middlewares": "node ./botListaCompras/lista_middlewares.js",
     "compras-grupos": "node ./botListaCompras/lista_grupos.js",
-    "bot-curso": "node ./botCurso/bot-curso.js"
+    "bot-curso": "node ./botCurso/index.js",
+    "bot-agenda": "node ./botAgenda/index.js"
   },
   "keywords": [],
   "author": "pedro padilha portella",

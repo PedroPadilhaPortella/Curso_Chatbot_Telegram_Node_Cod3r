@@ -4,7 +4,7 @@ const Telegraf = require('telegraf');
 const Telegram = require('telegraf/telegram');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
-const telegram = new Telegram(env.token);
+const telegram = new Telegram(env['TOKEN'])
 const bot = new Telegraf(env['TOKEN']);
 
 let contador = 1;
