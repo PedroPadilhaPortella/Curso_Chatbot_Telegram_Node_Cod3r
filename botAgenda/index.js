@@ -2,7 +2,10 @@ const env = require('dotenv').config().parsed;
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
+const Scene = require('telegraf/scenes/base');
+const Stage = require('telegraf/stage');
 const moment = require('moment');
+const session = require('telegraf/session')
 const {
     getAgenda,
     getTarefa,
@@ -65,74 +68,147 @@ bot.start((ctx) => {
     ctx.reply(`Seja bem vindo, ${name}!`);
 });
 
-/**------ Comandos do bot **/
+//------ Comandos do bot
 
-bot.command('dia', async (ctx) => {
-    const tarefas = await getAgenda(moment());
-    ctx.reply(`Aqui está a sua agenda do dia`, botoesAgenda(tarefas));
-});
+bot.command('dia', async ctx => {
+    const tarefas = await getAgenda(moment())
+    ctx.reply(`Aqui está a sua agenda do dia`, botoesAgenda(tarefas))
+})
 
-bot.command('amanha', async (ctx) => {
-    const tarefas = await getAgenda(moment().add({ day: 1 }));
-    ctx.reply(`Aqui está a sua agenda até amanhã`, botoesAgenda(tarefas));
-});
+bot.command('amanha', async ctx => {
+    const tarefas = await getAgenda(moment().add({ day: 1 }))
+    ctx.reply(`Aqui está a sua agenda até amanhã`, botoesAgenda(tarefas))
+})
 
 bot.command('semana', async ctx => {
-    const tarefas = await getAgenda(moment().add({ week: 1 }));
-    ctx.reply(`Aqui está a sua agenda da semana`, botoesAgenda(tarefas));
-});
-
-bot.command('mes', async ctx => {
-    const tarefas = await getAgenda(moment().add({ month: 1 }));
-    ctx.reply(`Aqui está a sua agenda mensal`, botoesAgenda(tarefas));
-});
+    const tarefas = await getAgenda(moment().add({ week: 1 }))
+    ctx.reply(`Aqui está a sua agenda da semana`, botoesAgenda(tarefas))
+})
 
 bot.command('concluidas', async ctx => {
-    const tarefas = await getConcluidas();
-    ctx.reply(`Estas são as tarefas que você já concluiu`, botoesAgenda(tarefas));
-});
+    const tarefas = await getConcluidas()
+    ctx.reply(`Estas são as tarefas que você já concluiu`, botoesAgenda(tarefas))
+})
 
 bot.command('tarefas', async ctx => {
-    const tarefas = await getTarefas();
-    ctx.reply(`Estas são as tarefas sem data definida`, botoesAgenda(tarefas));
-});
+    const tarefas = await getTarefas()
+    ctx.reply(`Estas são as tarefas sem data definida`, botoesAgenda(tarefas))
+})
 
 //------ Actions do bot
 
-bot.action(/mostrar (.+)/, async (ctx) => {
-    await exibirTarefa(ctx, ctx.match[1]);
-});
+bot.action(/mostrar (.+)/, async ctx => {
+    await exibirTarefa(ctx, ctx.match[1])
+})
 
 bot.action(/concluir (.+)/, async ctx => {
-    await concluirTarefa(ctx.match[1]);
-    await exibirTarefa(ctx, ctx.match[1]);
-    await ctx.reply(`Tarefa Concluída`);
+    await concluirTarefa(ctx.match[1])
+    await exibirTarefa(ctx, ctx.match[1])
+    await ctx.reply(`Tarefa Concluída`)
 })
 
 bot.action(/excluir (.+)/, async ctx => {
-    await excluirTarefa(ctx.match[1]);
-    await ctx.editMessageText(`Tarefa Excluída`);
+    await excluirTarefa(ctx.match[1])
+    await ctx.editMessageText(`Tarefa Excluída`)
 })
 
 const tecladoDatas = Markup.keyboard([
     ['Hoje', 'Amanhã'],
     ['1 Semana', '1 Mês'],
-]).resize().oneTime().extra();
+]).resize().oneTime().extra()
 
 let idTarefa = null
 
+//----- dataScene
 
+const dataScene = new Scene('data')
 
+dataScene.enter(ctx => {
+    idTarefa = ctx.match[1]
+    ctx.reply(`Gostaria de definir alguma data?`, tecladoDatas)
+})
+
+dataScene.leave(ctx => idTarefa = null)
+
+dataScene.hears(/hoje/gi, async ctx => {
+    const data = moment()
+    handleData(ctx, data)
+})
+
+dataScene.hears(/(Amanh[ãa])/gi, async ctx => {
+    const data = moment().add({ days: 1 })
+    handleData(ctx, data)
+})
+
+dataScene.hears(/^(\d+) dias?$/gi, async ctx => {
+    const data = moment().add({ days: ctx.match[1] })
+    handleData(ctx, data)
+})
+
+dataScene.hears(/^(\d+) semanas?/gi, async ctx => {
+    const data = moment().add({ weeks: ctx.match[1] })
+    handleData(ctx, data)
+})
+
+dataScene.hears(/^(\d+) m[eê]s(es)?/gi, async ctx => {
+    const data = moment().add({ months: ctx.match[1] })
+    handleData(ctx, data)
+})
+
+dataScene.hears(/(\d{2}\/\d{2}\/\d{4})/g, async ctx => {
+    const data = moment(ctx.match[1], 'DD/MM/YYYY')
+    handleData(ctx, data)
+})
+
+const handleData = async (ctx, data) => {
+    await atualizarDataTarefa(idTarefa, data)
+    await ctx.reply(`Data atualizada!`)
+    await exibirTarefa(ctx, idTarefa, true)
+    ctx.scene.leave()
+}
+
+dataScene.on('message', ctx =>
+    ctx.reply(`Padrões aceitos\ndd/MM/YYYY\nX dias\nX semanas\nX meses`))
+
+// Observacao Scene
+const obsScene = new Scene('observacoes')
+
+obsScene.enter(ctx => {
+    idTarefa = ctx.match[1]
+    ctx.reply(`Já pode adicionar suas anotações...`)
+})
+
+obsScene.leave(ctx => idTarefa = null)
+
+obsScene.on('text', async ctx => {
+    const tarefa = await getTarefa(idTarefa)
+    const novoTexto = ctx.update.message.text
+    const obs = tarefa.observacao ? 
+        tarefa.observacao + '\n---\n' + novoTexto : novoTexto
+    const res = await atualizarObsTarefa(idTarefa, obs)
+    await ctx.reply(`Observação adicionada!`)
+    await exibirTarefa(ctx, idTarefa, true)
+    ctx.scene.leave()
+})
+
+obsScene.on('message', ctx => ctx.reply(`Apenas observações em texto são aceitas`))
+
+const stage = new Stage([dataScene, obsScene])
+bot.use(session())
+bot.use(stage.middleware())
+
+bot.action(/setData (.+)/, Stage.enter('data'))
+bot.action(/addNota (.+)/, Stage.enter('observacoes'))
 
 //------ Inserir Tarefa
 
 bot.on('text', async ctx => {
     try {
-        const tarefa = await incluirTarefa(ctx.update.message.text);
-        await exibirTarefa(ctx, tarefa.id, true);
+        const tarefa = await incluirTarefa(ctx.update.message.text)
+        await exibirTarefa(ctx, tarefa.id, true)
     } catch (err) {
         console.log(err)
     }
-});
+})
 
-bot.startPolling();
+bot.startPolling()
